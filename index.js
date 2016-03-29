@@ -76,7 +76,7 @@ function adapter(uri, opts){
       if (err) self.emit('error', err);
     });
 
-    sub.on('pmessageBuffer', this.onmessage.bind(this));
+    sub.on('messageBuffer', this.onmessage.bind(this));
   }
 
   /**
