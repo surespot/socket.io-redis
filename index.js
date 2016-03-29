@@ -4,13 +4,14 @@
  */
 
 var uid2 = require('uid2');
+//using passed in ioredis
 //var redis = require('redis').createClient;
 var msgpack = require('msgpack-js');
 var Adapter = require('socket.io-adapter');
 var Emitter = require('events').EventEmitter;
 var debug = require('debug')('socket.io-redis');
 var util= require('util');
-var async = require('async');
+
 
 /**
  * Module exports.
@@ -43,15 +44,15 @@ function adapter(uri, opts){
   }
 
   // opts
-  var host = opts.host || '127.0.0.1';
-  var port = Number(opts.port || 6379);
+  //var host = opts.host || '127.0.0.1';
+  //var port = Number(opts.port || 6379);
   var pub = opts.pubClient;
   var sub = opts.subClient;
   var prefix = opts.key || 'socket.io';
 
   // init clients if needed
-  if (!pub) pub = redis(port, host);
-  if (!sub) sub = redis(port, host, { return_buffers: true });
+  //if (!pub) pub = redis(port, host);
+  //if (!sub) sub = redis(port, host, { return_buffers: true });
 
   // this server's key
   var uid = uid2(6);
@@ -72,7 +73,9 @@ function adapter(uri, opts){
     this.subClient = sub;
 
     var self = this;
-    sub.subscribe(prefix + '#' + nsp.name + '#', function(err){
+    var chn = prefix + '#' + nsp.name + '#';
+
+    sub.subscribe(chn, function(err){
       if (err) self.emit('error', err);
     });
 
@@ -93,7 +96,6 @@ function adapter(uri, opts){
 
 
   Redis.prototype.onmessage = function(channel, msg){
-
     var args = msgpack.decode(msg);
     var packet;
 
@@ -128,102 +130,8 @@ function adapter(uri, opts){
     if (!remote) {
       var chn = prefix + '#' + packet.nsp + '#';
       var msg = msgpack.encode([uid, packet, opts]);
-      if (opts.rooms) {
-        opts.rooms.forEach(function(room) {
-          var chnRoom = chn + room + '#';
-          pub.publish(chnRoom, msg);
-        });
-      } else {
-        pub.publish(chn, msg);
-      }
+      pub.publish(chn, msg);
     }
-  };
-
-  /**
-   * Subscribe client to room messages.
-   *
-   * @param {String} client id
-   * @param {String} room
-   * @param {Function} callback (optional)
-   * @api public
-   */
-
-  Redis.prototype.add = function(id, room, fn){
-    debug('adding %s to %s ', id, room);
-    var self = this;
-    Adapter.prototype.add.call(this, id, room);
-    var channel = prefix + '#' + this.nsp.name + '#' + room + '#';
-    sub.subscribe(channel, function(err){
-      if (err) {
-        self.emit('error', err);
-        if (fn) fn(err);
-        return;
-      }
-      if (fn) fn(null);
-    });
-  };
-
-  /**
-   * Unsubscribe client from room messages.
-   *
-   * @param {String} session id
-   * @param {String} room id
-   * @param {Function} callback (optional)
-   * @api public
-   */
-
-  Redis.prototype.del = function(id, room, fn){
-    debug('removing %s from %s', id, room);
-
-    var self = this;
-    var hasRoom = this.rooms.hasOwnProperty(room);
-    Adapter.prototype.del.call(this, id, room);
-
-    if (hasRoom && !this.rooms[room]) {
-      var channel = prefix + '#' + this.nsp.name + '#' + room + '#';
-      sub.unsubscribe(channel, function(err){
-        if (err) {
-          self.emit('error', err);
-          if (fn) fn(err);
-          return;
-        }
-        if (fn) fn(null);
-      });
-    } else {
-      if (fn) process.nextTick(fn.bind(null, null));
-    }
-  };
-
-  /**
-   * Unsubscribe client completely.
-   *
-   * @param {String} client id
-   * @param {Function} callback (optional)
-   * @api public
-   */
-
-  Redis.prototype.delAll = function(id, fn){
-    debug('removing %s from all rooms', id);
-
-    var self = this;
-    var rooms = this.sids[id];
-
-    if (!rooms) {
-      if (fn) process.nextTick(fn.bind(null, null));
-      return;
-    }
-
-    async.forEach(Object.keys(rooms), function(room, next){
-      self.del(id, room, next);
-    }, function(err){
-      if (err) {
-        self.emit('error', err);
-        if (fn) fn(err);
-        return;
-      }
-      delete self.sids[id];
-      if (fn) fn(null);
-    });
   };
 
   Redis.uid = uid;
