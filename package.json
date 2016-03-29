@@ -1,25 +1,25 @@
 {
   "name": "socket.io-redis",
-  "version": "0.1.4",
+  "version": "1.0.0",
   "description": "",
   "repository": {
     "type": "git",
-    "url": "git@github.com:Automattic/socket.io-redis.git"
+    "url": "git@github.com:socketio/socket.io-redis.git"
   },
   "scripts": {
     "test": "mocha"
   },
   "dependencies": {
-    "debug": "0.7.4",
-    "uid2": "0.0.3",
+    "async": "0.9.0",
+    "debug": "2.2.0",
     "msgpack-js": "0.3.0",
-    "socket.io-adapter": "0.3.1"
+    "socket.io-adapter": "0.4.0",
+    "uid2": "0.0.3"
   },
   "devDependencies": {
-    "socket.io": "1.0.2",
-    "socket.io-client": "1.0.2",
+    "socket.io": "socketio/socket.io",
+    "socket.io-client": "socketio/socket.io-client",
     "mocha": "1.18.0",
-    "expect.js": "0.3.1",
-    "async": "0.2.10"
+    "expect.js": "0.3.1"
   }
 }
